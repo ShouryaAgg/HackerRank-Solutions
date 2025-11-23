@@ -1,105 +1,93 @@
 @echo off
-setlocal enabledelayedexpansion
+title HackerRank Auto Update Script
 
-:: Colors
-set "GREEN=[32m"
-set "YELLOW=[33m"
-set "RED=[31m"
-set "BLUE=[34m"
-set "RESET=[0m"
+:: ------------------------------
+:: Step 1: Create folder structure
+:: ------------------------------
+if not exist Python mkdir Python
+if not exist SQL mkdir SQL
+if not exist Others mkdir Others
 
-echo %BLUE%-----------------------------------------%RESET%
-echo %GREEN%   🚀 HackerRank Auto-Update Script %RESET%
-echo %BLUE%-----------------------------------------%RESET%
+:: ------------------------------
+:: Step 2: Ask user for problem name
+:: ------------------------------
+set /p problemName=Enter the Problem Name: 
+
+echo Problem Entered: %problemName%
 echo.
 
-:: Ask for problem name
-set /p problem="Enter the Problem Name: "
-echo Problem Entered: %problem%
-echo.
-
-:: Language
+:: ------------------------------
+:: Step 3: Ask for file location
+:: ------------------------------
 echo Select where you solved the problem:
 echo [1] Python
 echo [2] SQL
 echo [3] Others
-set /p choice="Enter choice number: "
+set /p choice=Enter choice number: 
 
 if "%choice%"=="1" set folder=Python
 if "%choice%"=="2" set folder=SQL
 if "%choice%"=="3" set folder=Others
 
-echo.
+:: ------------------------------
+:: Step 4: Ask for filename
+:: ------------------------------
+set /p fileName=Enter the file name with extension (example: mysolution.py or solve.sql): 
 
-:: File name
-set /p filename="Enter the file name with extension (example: solve.py or query.sql): "
+set fullPath=%folder%\%fileName%
 
-if not exist "%filename%" (
-    echo %RED%❌ Error: The file "%filename%" was NOT found.%RESET%
-    pause
-    exit /b
+:: ------------------------------
+:: Step 5: Add comment to the file
+:: Auto-detect file extension for proper comment style
+:: ------------------------------
+
+for %%a in ("%fileName%") do set ext=%%~xa
+
+if "%ext%"==".py" (
+    echo # Added Solution of %problemName% > "%fullPath%.tmp"
+)
+if "%ext%"==".sql" (
+    echo -- Added Solution of %problemName% > "%fullPath%.tmp"
+)
+if "%ext%"==".txt" (
+    echo Added Solution of %problemName% > "%fullPath%.tmp"
+)
+if "%ext%"==".cpp" (
+    echo // Added Solution of %problemName% > "%fullPath%.tmp"
 )
 
-echo %GREEN%✔ File found. Proceeding...%RESET%
-echo.
-
-:: Create folder if missing
-if not exist "%folder%" mkdir "%folder%"
-
-copy "%filename%" "%folder%\%problem%.%filename:*.=%" >nul
-echo %GREEN%✔ File copied to %folder% folder.%RESET%
-echo.
-
-:: =======================================
-:: COMMIT LOCAL CHANGES BEFORE PULL
-:: =======================================
-echo %BLUE%📝 Staging local changes before pull...%RESET%
-git add .
-
-git commit -m "Auto-save local changes before pulling" >nul 2>&1
-
-:: (If nothing to commit, ignore it)
-echo %GREEN%✔ Local changes saved.%RESET%
-echo.
-
-:: =======================================
-:: SAFE GIT PULL (rebased)
-:: =======================================
-echo %BLUE%🔄 Pulling latest changes from GitHub...%RESET%
-git pull --rebase origin main
-
-if errorlevel 1 (
-    echo %RED%❌ Git Pull Failed. Resolve manually.%RESET%
-    pause
-    exit /b
+:: Append original content if file exists
+if exist "%fullPath%" (
+    type "%fullPath%" >> "%fullPath%.tmp"
 )
 
-echo %GREEN%✔ Repository updated.%RESET%
+:: Replace original file
+move /y "%fullPath%.tmp" "%fullPath%" >nul
+
+echo Comment added successfully!
 echo.
 
-:: =======================================
-:: FINAL COMMIT FOR PROBLEM
-:: =======================================
-echo %BLUE%📦 Committing solution...%RESET%
+:: ------------------------------
+:: Step 6: Add update history log
+:: ------------------------------
+echo [%date% %time%] Updated: %problemName% >> update-log.txt
+
+:: ------------------------------
+:: Step 7: Git automation
+:: ------------------------------
+echo Adding files to Git...
 git add .
-git commit -m "Added solution for %problem%" 
 
-echo %GREEN%✔ Commit complete.%RESET%
 echo.
+echo Committing changes...
+git commit -m "Added Solution of %problemName%"
 
-:: =======================================
-:: PUSH
-:: =======================================
-echo %BLUE%🚀 Pushing to GitHub...%RESET%
+echo.
+echo Pushing to GitHub...
 git push origin main
 
-if errorlevel 1 (
-    echo %RED%❌ Push Failed.%RESET%
-    pause
-    exit /b
-)
-
 echo.
-echo %GREEN%🎉 Update Completed Successfully!%RESET%
-echo %BLUE%-----------------------------------------%RESET%
+echo ------------------------------
+echo Update Completed Successfully!
+echo ------------------------------
 pause
