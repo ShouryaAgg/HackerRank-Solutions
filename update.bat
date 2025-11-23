@@ -1,93 +1,120 @@
 @echo off
-title HackerRank Auto Update Script
+setlocal enabledelayedexpansion
 
-:: ------------------------------
-:: Step 1: Create folder structure
-:: ------------------------------
-if not exist Python mkdir Python
-if not exist SQL mkdir SQL
-if not exist Others mkdir Others
+:: ================================
+:: Colors
+:: ================================
+for /f "delims=" %%a in ('powershell ^(New-Object -ComObject WScript.Shell^).Popup^("color"^)') do set reset=
+echo.
+set "GREEN=[32m"
+set "YELLOW=[33m"
+set "RED=[31m"
+set "BLUE=[34m"
+set "RESET=[0m"
 
-:: ------------------------------
-:: Step 2: Ask user for problem name
-:: ------------------------------
-set /p problemName=Enter the Problem Name: 
-
-echo Problem Entered: %problemName%
+:: ================================
+:: Start
+:: ================================
+echo %BLUE%----------------------------------------- %RESET%
+echo %GREEN%   🚀 HackerRank Auto-Update Script %RESET%
+echo %BLUE%----------------------------------------- %RESET%
 echo.
 
-:: ------------------------------
-:: Step 3: Ask for file location
-:: ------------------------------
+:: ================================
+:: Ask for problem name
+:: ================================
+set /p problem="Enter the Problem Name: "
+echo Problem Entered: %problem%
+echo.
+
+:: ================================
+:: Ask for language choice
+:: ================================
 echo Select where you solved the problem:
 echo [1] Python
 echo [2] SQL
 echo [3] Others
-set /p choice=Enter choice number: 
+set /p choice="Enter choice number: "
 
 if "%choice%"=="1" set folder=Python
 if "%choice%"=="2" set folder=SQL
 if "%choice%"=="3" set folder=Others
 
-:: ------------------------------
-:: Step 4: Ask for filename
-:: ------------------------------
-set /p fileName=Enter the file name with extension (example: mysolution.py or solve.sql): 
-
-set fullPath=%folder%\%fileName%
-
-:: ------------------------------
-:: Step 5: Add comment to the file
-:: Auto-detect file extension for proper comment style
-:: ------------------------------
-
-for %%a in ("%fileName%") do set ext=%%~xa
-
-if "%ext%"==".py" (
-    echo # Added Solution of %problemName% > "%fullPath%.tmp"
-)
-if "%ext%"==".sql" (
-    echo -- Added Solution of %problemName% > "%fullPath%.tmp"
-)
-if "%ext%"==".txt" (
-    echo Added Solution of %problemName% > "%fullPath%.tmp"
-)
-if "%ext%"==".cpp" (
-    echo // Added Solution of %problemName% > "%fullPath%.tmp"
-)
-
-:: Append original content if file exists
-if exist "%fullPath%" (
-    type "%fullPath%" >> "%fullPath%.tmp"
-)
-
-:: Replace original file
-move /y "%fullPath%.tmp" "%fullPath%" >nul
-
-echo Comment added successfully!
 echo.
 
-:: ------------------------------
-:: Step 6: Add update history log
-:: ------------------------------
-echo [%date% %time%] Updated: %problemName% >> update-log.txt
+:: ================================
+:: Ask for file name
+:: ================================
+set /p filename="Enter the file name with extension (example: solve.py or query.sql): "
 
-:: ------------------------------
-:: Step 7: Git automation
-:: ------------------------------
-echo Adding files to Git...
+if not exist "%filename%" (
+    echo %RED%❌ Error: The file "%filename%" was NOT found.%RESET%
+    echo Make sure it exists in the current folder.
+    pause
+    exit /b 1
+)
+
+echo %GREEN%✔ File found. Proceeding...%RESET%
+echo.
+
+:: ================================
+:: Ensure folder exists
+:: ================================
+if not exist "%folder%" (
+    echo %YELLOW%⚠ Folder '%folder%' does not exist. Creating it...%RESET%
+    mkdir "%folder%"
+)
+
+:: Copy file
+copy "%filename%" "%folder%\%problem%.%filename:*.=%" >nul
+
+echo %GREEN%✔ File copied to %folder% folder.%RESET%
+echo.
+
+:: ================================
+:: Auto Git Pull (safe rebase)
+:: ================================
+echo %BLUE%🔄 Pulling latest changes from GitHub...%RESET%
+git pull --rebase origin main
+
+if errorlevel 1 (
+    echo %RED%❌ Git Pull Failed! Please resolve manually.%RESET%
+    pause
+    exit /b 1
+)
+
+echo %GREEN%✔ Repository is up to date.%RESET%
+echo.
+
+:: ================================
+:: Git Add + Commit
+:: ================================
+echo Adding files...
 git add .
 
-echo.
 echo Committing changes...
-git commit -m "Added Solution of %problemName%"
+git commit -m "Added solution for %problem%" 
 
-echo.
-echo Pushing to GitHub...
+if errorlevel 1 (
+    echo %YELLOW%⚠ Nothing new to commit.%RESET%
+)
+
+:: ================================
+:: Git Push
+:: ================================
+echo %BLUE%🚀 Pushing to GitHub...%RESET%
 git push origin main
 
+if errorlevel 1 (
+    echo %RED%❌ Push Failed.%RESET%
+    echo %YELLOW%Tip:%RESET% Run this manually:
+    echo git pull --rebase origin main
+    echo git push origin main
+    pause
+    exit /b 1
+)
+
 echo.
-echo ------------------------------
-echo Update Completed Successfully!
-echo ------------------------------
+echo %GREEN%🎉 Update Completed Successfully!%RESET%
+echo %BLUE%-----------------------------------------%RESET%
 pause
