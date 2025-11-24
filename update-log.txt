@@ -7,3 +7,4 @@
 [24-11-2025  5:28:08.92] Updated: Weather Observation Station 4 
 [24-11-2025  5:29:20.02] Updated: Weather Observation Station 3 
 [24-11-2025  5:30:55.42] Updated: Select All 
+[24-11-2025  5:31:32.01] Updated: Revising the Select Query II 
